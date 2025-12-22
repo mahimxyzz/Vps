@@ -4,7 +4,6 @@
 #  PTERODACTYL PANEL INSTALLER - NEXT GEN EDITION
 #                  Ultra Edition (2025)
 # ===================================================
-#  Remastered & Enhanced by Grok
 #  Original Creator: MahimOp
 #  YouTube : https://www.youtube.com/@mahimxyz
 #  Discord : https://discord.gg/zkDNdPpArS
