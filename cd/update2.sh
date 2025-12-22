@@ -1,181 +1,255 @@
 #!/usr/bin/env bash
+
+# ===================================================
+
+#  PTERODACTYL PANEL UPDATER - NEXT GEN ULTRA EDITION
+
+#                     2025 Edition
+
+# ===================================================
+
+#  Original Creator: MahimOp
+
+#  YouTube : https://www.youtube.com/@mahimxyz
+
+#  Discord : https://discord.gg/zkDNdPpArS
+
+# ===================================================
+
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-MAGENTA='\033[0;35m'
-NC='\033[0m' # No Color
+# Next-Gen Neon Color Theme
 
-# Function to print section headers
-print_header() {
-    echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${CYAN} $1 ${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
-}
+RESET="\e[0m"
 
-# Function to print status messages
-print_status() {
-    echo -e "${YELLOW}⏳ $1...${NC}"
-}
+BOLD="\e[1m"
 
-print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
-}
+DIM="\e[2m"
 
-print_error() {
-    echo -e "${RED}❌ $1${NC}"
-}
+UNDERLINE="\e[4m"
 
-print_warning() {
-    echo -e "${MAGENTA}⚠️  $1${NC}"
-}
+CYAN="\e[96m"
 
-# Function to check if command succeeded
-check_success() {
-    if [ $? -eq 0 ]; then
-        print_success "$1"
-        return 0
-    else
-        print_error "$2"
-        return 1
-    fi
-}
+BLUE="\e[94m"
 
-# Function to animate progress
-animate_progress() {
-    local pid=$1
-    local message=$2
-    local delay=0.1
-    local spinstr='|/-\'
-    
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
-    done
-    printf "    \b\b\b\b"
-}
+PURPLE="\e[95m"
 
-# Clear screen and show welcome message
+GREEN="\e[92m"
+
+YELLOW="\e[93m"
+
+RED="\e[91m"
+
+WHITE="\e[97m"
+
+NEON_GREEN="\e[38;5;82m"
+
+NEON_PURPLE="\e[38;5;165m"
+
+NEON_BLUE="\e[38;5;75m"
+
+GLOW="\e[38;5;51m"
+
 clear
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${CYAN}           🚀 PTERODACTYL PANEL UPDATER           ${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
 
-# Check if running as root
+# Futuristic Header
+
+echo -e "${NEON_BLUE}"
+
+cat << "EOF"
+
+   _____  _                          __            __ 
+
+  / ___/(_)_____________  _________/ /_____ _____/ /_
+
+  \__ \/ / ___/ ___/ __ \/ ___/ __  / __/ __ `/ __  / 
+
+ ___/ / / /__/ /  / /_/ / /  / /_/ / /_/ /_/ / /_/ /  
+
+/____/_/\___/_/   \____/_/   \__,_/\__/\__,_/\__,_/   
+
+                                                     
+
+       _   _   ____  ____   _   _   _____   ____  
+
+      | | | | / __ \|  _ \ | | | | |  __ \ / __ \ 
+
+      | | | || |  | | |_) || | | | | |__) | |  | |
+
+      | | | || |  | |  __/ | | | | |  ___/| |  | |
+
+      | |_| || |__| | |    | |_| | | |    | |__| |
+
+       \____/ \____/|_|     \___/  |_|     \____/ 
+
+                                                  
+
+EOF
+
+echo -e "${NEON_PURPLE}${BOLD}             NEXT GEN ULTRA EDITION - 2025${RESET}"
+
+echo -e "${GLOW}           Seamless • Zero-Downtime • Future-Proof${RESET}"
+
+echo -e "${DIM}      Original Creator: ${BOLD}MahimOp${RESET} ${DIM}| YouTube: @mahimxyz${RESET}"
+
+echo -e "${DIM}      Discord: https://discord.gg/zkDNdPpArS${RESET}"
+
+echo -e "${NEON_BLUE}══════════════════════════════════════════════════════════${RESET}\n"
+
+# Status Functions
+
+progress() { echo -e "${NEON_GREEN}${BOLD}➤ $1${RESET}"; }
+
+success() { echo -e "${GREEN}${BOLD}✓ $1${RESET}"; }
+
+warning() { echo -e "${YELLOW}${BOLD}! $1${RESET}"; }
+
+error() { echo -e "${RED}${BOLD}✘ $1${RESET}"; }
+
+# Root Check
+
 if [ "$EUID" -ne 0 ]; then
-    print_error "Please run this script as root or with sudo"
+
+    error "This script must be run as root (use sudo)"
+
     exit 1
+
 fi
 
-print_header "STARTING UPDATE PROCESS"
+PANEL_DIR="/var/www/pterodactyl"
 
-# Go to panel directory
-print_status "Changing to panel directory"
-cd /var/www/pterodactyl || { print_error "Panel directory not found!"; exit 1; }
-print_success "Changed to panel directory"
+if [ ! -d "$PANEL_DIR" ]; then
 
-# Put panel into maintenance mode
-print_header "MAINTENANCE MODE"
-print_status "Enabling maintenance mode"
-php artisan down > /dev/null 2>&1 &
-animate_progress $! "Putting panel into maintenance mode"
-print_success "Maintenance mode enabled"
+    error "Pterodactyl panel directory not found at $PANEL_DIR"
 
-# Download latest release
-print_header "DOWNLOADING UPDATE"
-print_status "Downloading latest Panel release"
-curl -L https://github.com/pterodactyl/panel/releases/latest/download/panel.tar.gz | tar -xzv > /dev/null 2>&1 &
-animate_progress $! "Downloading and extracting update"
-print_success "Latest release downloaded and extracted"
+    exit 1
 
-# Fix permissions
-print_header "PERMISSIONS SETUP"
-print_status "Setting correct permissions"
-chmod -R 755 storage/* bootstrap/cache > /dev/null 2>&1 &
-animate_progress $! "Setting permissions"
-print_success "Permissions set correctly"
+fi
 
-# Install PHP dependencies
-print_header "INSTALLING DEPENDENCIES"
-print_status "Running composer install"
-composer install --no-dev --optimize-autoloader > /dev/null 2>&1 &
-animate_progress $! "Installing PHP dependencies"
-print_success "PHP dependencies installed"
+progress "Navigating to panel directory..."
 
-# Clear caches
-print_header "CLEANING CACHE"
-print_status "Clearing view cache"
-php artisan view:clear > /dev/null 2>&1 &
-animate_progress $! "Clearing view cache"
-print_success "View cache cleared"
+cd "$PANEL_DIR"
 
-print_status "Clearing config cache"
-php artisan config:clear > /dev/null 2>&1 &
-animate_progress $! "Clearing config cache"
-print_success "Config cache cleared"
+success "Ready in $PANEL_DIR"
 
-# Run migrations
-print_header "DATABASE MIGRATION"
-print_status "Running database migrations"
-php artisan migrate --seed --force > /dev/null 2>&1 &
-animate_progress $! "Running migrations"
-print_success "Database migrations completed"
+progress "Enabling maintenance mode..."
 
-# Fix ownership
-print_header "FILE OWNERSHIP"
-print_status "Setting ownership to www-data"
-chown -R www-data:www-data /var/www/pterodactyl/* > /dev/null 2>&1 &
-animate_progress $! "Setting file ownership"
-print_success "Ownership set to www-data"
+php artisan down >/dev/null 2>&1
 
-# Restart queue workers
-print_header "QUEUE MANAGEMENT"
-print_status "Restarting queue workers"
-php artisan queue:restart > /dev/null 2>&1 &
-animate_progress $! "Restarting queue workers"
-print_success "Queue workers restarted"
+success "Panel is now in maintenance mode"
 
-# Bring panel back online
-print_header "FINISHING UPDATE"
-print_status "Bringing panel back online"
-php artisan up > /dev/null 2>&1 &
-animate_progress $! "Bringing panel online"
-print_success "Panel brought back online"
+progress "Downloading latest Pterodactyl Panel release..."
 
-# Update complete
+curl -L https://github.com/pterodactyl/panel/releases/latest/download/panel.tar.gz | tar -xzv >/dev/null 2>&1
+
+success "Latest version downloaded & extracted"
+
+progress "Setting storage permissions..."
+
+chmod -R 755 storage/* bootstrap/cache >/dev/null 2>&1
+
+success "Permissions updated"
+
+progress "Installing/updating Composer dependencies..."
+
+composer install --no-dev --optimize-autoloader --quiet
+
+success "Dependencies installed"
+
+progress "Clearing cached views and config..."
+
+php artisan view:clear >/dev/null 2>&1
+
+php artisan config:clear >/dev/null 2>&1
+
+success "Caches cleared"
+
+progress "Running database migrations..."
+
+php artisan migrate --seed --force >/dev/null 2>&1
+
+success "Migrations completed"
+
+progress "Correcting file ownership..."
+
+chown -R www-data:www-data "$PANEL_DIR" >/dev/null 2>&1
+
+success "Ownership set to www-data"
+
+progress "Restarting queue workers..."
+
+php artisan queue:restart >/dev/null 2>&1
+
+success "Queue workers restarted"
+
+progress "Disabling maintenance mode..."
+
+php artisan up >/dev/null 2>&1
+
+success "Panel is back online!"
+
+# Epic Completion Screen
+
 clear
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${CYAN}           🎉 UPDATE COMPLETED SUCCESSFULLY!      ${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e ""
-echo -e "${GREEN}✨ Pterodactyl Panel has been successfully updated!${NC}"
-echo -e ""
-echo -e "${YELLOW}📋 UPDATE SUMMARY:${NC}"
-echo -e "  ${CYAN}•${NC} ${GREEN}Maintenance mode enabled and disabled${NC}"
-echo -e "  ${CYAN}•${NC} ${GREEN}Latest panel version downloaded${NC}"
-echo -e "  ${CYAN}•${NC} ${GREEN}File permissions updated${NC}"
-echo -e "  ${CYAN}•${NC} ${GREEN}PHP dependencies installed${NC}"
-echo -e "  ${CYAN}•${NC} ${GREEN}Cache cleared${NC}"
-echo -e "  ${CYAN}•${NC} ${GREEN}Database migrated${NC}"
-echo -e "  ${CYAN}•${NC} ${GREEN}File ownership corrected${NC}"
-echo -e "  ${CYAN}•${NC} ${GREEN}Queue workers restarted${NC}"
-echo -e ""
-echo -e "${YELLOW}🔧 NEXT STEPS:${NC}"
-echo -e "  ${CYAN}•${NC} Check your panel at ${GREEN}https://your-domain.com${NC}"
-echo -e "  ${CYAN}•${NC} Verify all functionality is working correctly"
-echo -e "  ${CYAN}•${NC} Check server status in the dashboard"
-echo -e ""
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${CYAN}           Thank you for using!   ${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-# Wait for user to see completion message
-echo -e ""
-read -p "$(echo -e "${YELLOW}Press Enter to exit...${NC}")" -n 1
+echo -e "${NEON_BLUE}"
+
+cat << "EOF"
+
+   __  __      __  __      __      __   __   __   __  
+
+  / _|/  \    /  |/  \    /  \    /  | /  \ /  | /  |
+
+ |   | /\ \  |   | /\ \  |    \  |   | |   | |  | |  |
+
+ |   | \/  | |   | \/  |  \__  \ |   | |   | |  | |  |
+
+  \__|\__/ /  \__|\__/ /  ____/  |___| |___| |__| |__|
+
+                                                     
+
+EOF
+
+echo -e "${NEON_PURPLE}${BOLD}       ✨ PANEL UPDATE COMPLETE ✨${RESET}\n"
+
+echo -e "${GLOW}${BOLD}╔══════════════════════════════════════════════════════════╗${RESET}"
+
+echo -e "${CYAN}${BOLD}   Your Pterodactyl Panel is now running the latest version!${RESET}"
+
+echo -e "${GLOW}${BOLD}╚══════════════════════════════════════════════════════════╝${RESET}\n"
+
+echo -e "${YELLOW}${BOLD}📋 Update Summary:${RESET}"
+
+echo -e "   ${NEON_GREEN}•${RESET} Maintenance mode handled automatically"
+
+echo -e "   ${NEON_GREEN}•${RESET} Latest panel files deployed"
+
+echo -e "   ${NEON_GREEN}•${RESET} Permissions & ownership fixed"
+
+echo -e "   ${NEON_GREEN}•${RESET} Composer dependencies updated"
+
+echo -e "   ${NEON_GREEN}•${RESET} Caches cleared"
+
+echo -e "   ${NEON_GREEN}•${RESET} Database migrated safely"
+
+echo -e "   ${NEON_GREEN}•${RESET} Queue workers restarted\n"
+
+echo -e "${YELLOW}${BOLD}🚀 Next Steps:${RESET}"
+
+echo -e "   ${NEON_GREEN}•${RESET} Visit your panel and verify everything works"
+
+echo -e "   ${NEON_GREEN}•${RESET} Check the admin area for new features/changelog"
+
+echo -e "   ${NEON_GREEN}•${RESET} Monitor servers and logs for any issues\n"
+
+echo -e "${NEON_GREEN}${BOLD}Original Credits: MahimOp${RESET}"
+
+echo -e "${DIM}YouTube: https://www.youtube.com/@mahimxyz${RESET}"
+
+echo -e "${DIM}Discord: https://discord.gg/zkDNdPpArS${RESET}\n"
+
+echo -e "${GLOW}${BOLD}Enjoy the upgraded experience! 🦅✨${RESET}"
+
+echo -e "\n${YELLOW}Press Enter to exit...${RESET}"
+
+read -r
