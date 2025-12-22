@@ -1,188 +1,156 @@
 #!/bin/bash
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-MAGENTA='\033[0;35m'
-WHITE='\033[1;37m'
-NC='\033[0m' # No Color
+# ===================================================
+#  NEBULA BLUEPRINT INSTALLER - NEXT GEN ULTRA EDITION
+#                     2025 Edition
+# ===================================================
+#  Remastered & Enhanced by Grok
+#  Original Creator: MahimOp
+#  YouTube : https://www.youtube.com/@mahimxyz
+#  Discord : https://discord.gg/zkDNdPpArS
+# ===================================================
 
-# Function to print section headers
-print_header() {
-    echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${CYAN} $1 ${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
-}
+set -e
 
-# Function to print status messages
-print_status() {
-    echo -e "${YELLOW}⏳ $1...${NC}"
-}
+# Next-Gen Color Theme
+RESET="\e[0m"
+BOLD="\e[1m"
+DIM="\e[2m"
+UNDERLINE="\e[4m"
 
-print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
-}
+CYAN="\e[96m"
+BLUE="\e[94m"
+PURPLE="\e[95m"
+GREEN="\e[92m"
+YELLOW="\e[93m"
+RED="\e[91m"
+WHITE="\e[97m"
 
-print_error() {
-    echo -e "${RED}❌ $1${NC}"
-}
+NEON_GREEN="\e[38;5;82m"
+NEON_PURPLE="\e[38;5;165m"
+NEON_BLUE="\e[38;5;75m"
+GLOW="\e[38;5;51m"
 
-print_warning() {
-    echo -e "${MAGENTA}⚠️  $1${NC}"
-}
-
-# Function to animate progress
-animate_progress() {
-    local pid=$1
-    local message=$2
-    local delay=0.1
-    local spinstr='|/-\'
-    
-    print_status "$message"
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
-    done
-    printf "    \b\b\b\b"
-}
-
-# Function to check if command succeeded
-check_success() {
-    if [ $? -eq 0 ]; then
-        print_success "$1"
-        return 0
-    else
-        print_error "$2"
-        return 1
-    fi
-}
-
-# Welcome message
 clear
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${CYAN}"
-echo -e "${NC}"
-echo -e "${CYAN}           Nebula Blueprint Installer${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-sleep 2
 
-# Check if running as root
+# Futuristic ASCII Header
+echo -e "${NEON_BLUE}"
+cat << "EOF"
+ ___      ___       __       __    __   __     ___      ___ 
+|"  \    /"  |     /""\     /" |  | "\ |" \   |"  \    /"  |
+ \   \  //   |    /    \   (:  (__)  :)||  |   \   \  //   |
+ /\\  \/.    |   /' /\  \   \/      \/ |:  |   /\\  \/.    |
+|: \.        |  //  __'  \  //  __  \\ |.  |  |: \.        |
+|.  \    /:  | /   /  \\  \(:  (  )  :)/\  |\ |.  \    /:  |
+|___|\__/|___|(___/    \___)\__|  |__/(__\_|_)|___|\__/|___|
+                                                            
+                                     
+EOF
+echo -e "${NEON_PURPLE}${BOLD}             NEXT GEN ULTRA EDITION - 2025${RESET}"
+echo -e "${GLOW}       Seamless • Fast • Future-Proof Automation${RESET}"
+echo -e "${DIM}      Original Creator: ${BOLD}MahimOp${RESET} ${DIM}| YouTube: @mahimxyz${RESET}"
+echo -e "${DIM}      Discord: https://discord.gg/zkDNdPpArS${RESET}"
+echo -e "${NEON_BLUE}══════════════════════════════════════════════════════════${RESET}\n"
+
+# Status Functions
+progress() { echo -e "${NEON_GREEN}${BOLD}➤ $1${RESET}"; }
+success() { echo -e "${GREEN}${BOLD}✓ $1${RESET}"; }
+warning() { echo -e "${YELLOW}${BOLD}! $1${RESET}"; }
+error() { echo -e "${RED}${BOLD}✘ $1${RESET}"; }
+
+# Root Check
 if [ "$EUID" -ne 0 ]; then
-    print_error "Please run this script as root or with sudo"
+    error "This script must be run as root (use sudo)"
     exit 1
 fi
 
-print_header "STARTING NEBULA BLUEPRINT INSTALLATION"
-
-# ------------------------------
-# Target directory
-# ------------------------------
 TARGET_DIR="/var/www/pterodactyl"
-
-print_status "Creating target directory"
-mkdir -p "$TARGET_DIR" > /dev/null 2>&1
-check_success "Target directory created" "Failed to create directory"
-
-# ------------------------------
-# Temp repository folder
-# ------------------------------
 TEMP_REPO="/tmp/ak-mahimxyzz-bot"
 
-print_status "Cleaning up old temporary files"
-rm -rf "$TEMP_REPO" > /dev/null 2>&1
-check_success "Old files cleaned up" "Failed to clean up"
+progress "Preparing environment..."
 
-# ------------------------------
-# Clone repository temporarily
-# ------------------------------
-print_header "DOWNLOADING NEBULA BLUEPRINT"
-print_status "Cloning repository"
-git clone https://github.com/mahimxyzz/Vps.git "$TEMP_REPO" > /dev/null 2>&1 &
-animate_progress $! "Cloning repository"
-check_success "Repository cloned" "Failed to clone repository"
+# Clean old temp
+rm -rf "$TEMP_REPO" >/dev/null 2>&1
 
-# ------------------------------
-# Check if nebula.blueprint exists
-# ------------------------------
+# Create target
+mkdir -p "$TARGET_DIR"
+
+progress "Downloading Nebula Blueprint from repository..."
+git clone https://github.com/mahimxyzz/Vps.git "$TEMP_REPO" >/dev/null 2>&1 || {
+    error "Failed to clone repository. Check internet or repo URL."
+    exit 1
+}
+success "Repository downloaded!"
+
 SOURCE_FILE="$TEMP_REPO/nebula.blueprint"
 
-print_status "Checking for nebula.blueprint"
-if [ -f "$SOURCE_FILE" ]; then
-    print_success "nebula.blueprint found"
-    
-    # Move to target directory
-    print_status "Moving blueprint to target directory"
-    mv "$SOURCE_FILE" "$TARGET_DIR/" > /dev/null 2>&1
-    check_success "Blueprint moved to $TARGET_DIR" "Failed to move blueprint"
-else
-    print_error "nebula.blueprint not found in repository!"
-    rm -rf "$TEMP_REPO" > /dev/null 2>&1
+if [ ! -f "$SOURCE_FILE" ]; then
+    error "nebula.blueprint not found in repository!"
+    rm -rf "$TEMP_REPO"
     exit 1
 fi
 
-# ------------------------------
-# Remove temporary repo
-# ------------------------------
-print_status "Cleaning up temporary files"
-rm -rf "$TEMP_REPO" > /dev/null 2>&1
-check_success "Temporary files cleaned up" "Failed to clean up"
+progress "Deploying nebula.blueprint to panel..."
+mv "$SOURCE_FILE" "$TARGET_DIR/" && success "Blueprint deployed to $TARGET_DIR"
+rm -rf "$TEMP_REPO"
+success "Cleanup complete!"
 
-# ------------------------------
-# Auto-run blueprint
-# ------------------------------
-print_header "EXECUTING BLUEPRINT"
-cd "$TARGET_DIR" || exit 1
-
-print_status "Checking for blueprint tool"
+progress "Checking for Blueprint framework..."
 if command -v blueprint >/dev/null 2>&1; then
-    print_success "Blueprint tool found"
-    
-    print_status "Running blueprint installation"
-    blueprint -i nebula.blueprint > /dev/null 2>&1 &
-    animate_progress $! "Running blueprint installation"
-    
-    if [ $? -eq 0 ]; then
-        print_success "Blueprint executed successfully"
+    success "Blueprint tool detected!"
+else
+    warning "Blueprint tool not found. Installing now..."
+    curl -sSL https://blueprint.zip/install.sh | bash
+    if command -v blueprint >/dev/null 2>&1; then
+        success "Blueprint installed successfully!"
     else
-        print_error "Blueprint execution failed"
+        error "Failed to install Blueprint tool."
         exit 1
     fi
-else
-    print_error "Blueprint tool not installed"
-    echo -e ""
-    echo -e "${YELLOW}To install blueprint, run:${NC}"
-    echo -e "${CYAN}curl -sSL https://blueprintjs.dev/install.sh | bash${NC}"
-    echo -e ""
-    exit 1
 fi
 
-# Installation Complete
-print_header "INSTALLATION COMPLETE"
-echo -e "${GREEN}🎉 Nebula Blueprint has been successfully installed!${NC}"
-echo -e ""
-echo -e "${YELLOW}📋 INSTALLATION SUMMARY:${NC}"
-echo -e "  ${CYAN}•${NC} ${GREEN}Repository cloned successfully${NC}"
-echo -e "  ${CYAN}•${NC} ${GREEN}nebula.blueprint downloaded${NC}"
-echo -e "  ${CYAN}•${NC} ${GREEN}Blueprint executed successfully${NC}"
-echo -e ""
-echo -e "${YELLOW}📍 LOCATION:${NC}"
-echo -e "  ${CYAN}•${NC} ${GREEN}Blueprint file: ${TARGET_DIR}/nebula.blueprint${NC}"
-echo -e ""
-echo -e "${YELLOW}🚀 NEXT STEPS:${NC}"
-echo -e "  ${CYAN}•${NC} Check your panel for new features"
-echo -e "  ${CYAN}•${NC} Review the blueprint configuration"
-echo -e "  ${CYAN}•${NC} Restart your panel if required"
-echo -e ""
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${CYAN}           Thank you for using!   ${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+progress "Executing Nebula Blueprint (this may take a moment)..."
+cd "$TARGET_DIR"
 
-# Wait for user to see completion message
-echo -e ""
-read -p "$(echo -e "${YELLOW}Press Enter to exit...${NC}")" -n 1
+# Run with output visible for user feedback
+blueprint -i nebula.blueprint || {
+    error "Blueprint execution failed. Check logs or compatibility."
+    exit 1
+}
+
+success "Nebula Blueprint executed successfully!"
+
+# Epic Completion Screen
+clear
+echo -e "${NEON_BLUE}"
+cat << "EOF"
+ ___      ___       __       __    __   __     ___      ___ 
+|"  \    /"  |     /""\     /" |  | "\ |" \   |"  \    /"  |
+ \   \  //   |    /    \   (:  (__)  :)||  |   \   \  //   |
+ /\\  \/.    |   /' /\  \   \/      \/ |:  |   /\\  \/.    |
+|: \.        |  //  __'  \  //  __  \\ |.  |  |: \.        |
+|.  \    /:  | /   /  \\  \(:  (  )  :)/\  |\ |.  \    /:  |
+|___|\__/|___|(___/    \___)\__|  |__/(__\_|_)|___|\__/|___|
+                                                            
+EOF
+echo -e "${NEON_PURPLE}${BOLD}       ✨ NEBULA INSTALLATION COMPLETE ✨${RESET}\n"
+
+echo -e "${GLOW}${BOLD}╔══════════════════════════════════════════════════════════╗${RESET}"
+echo -e "${CYAN}${BOLD}   Blueprint File:${RESET} ${WHITE}${UNDERLINE}${TARGET_DIR}/nebula.blueprint${RESET}"
+echo -e "${GLOW}${BOLD}╚══════════════════════════════════════════════════════════╝${RESET}\n"
+
+echo -e "${YELLOW}${BOLD}🚀 Next Steps:${RESET}"
+echo -e "   ${NEON_GREEN}•${RESET} Clear cache: ${BOLD}php artisan view:clear && php artisan config:clear${RESET}"
+echo -e "   ${NEON_GREEN}•${RESET} Restart queue: ${BOLD}php artisan queue:restart${RESET}"
+echo -e "   ${NEON_GREEN}•${RESET} Refresh panel in browser (Ctrl+Shift+R for hard refresh)"
+echo -e "   ${NEON_GREEN}•${RESET} Enjoy the stunning Nebula theme!${RESET}\n"
+
+warning "Always backup your panel before installing extensions!"
+
+echo -e "${NEON_GREEN}${BOLD}Original Credits: MahimOp${RESET}"
+echo -e "${DIM}YouTube: https://www.youtube.com/@mahimxyz${RESET}"
+echo -e "${DIM}Discord: https://discord.gg/zkDNdPpArS${RESET}\n"
+
+echo -e "${GLOW}${BOLD}Your Pterodactyl Panel now shines with Nebula! 🌌✨${RESET}"
+echo -e "\n${YELLOW}Press Enter to exit...${RESET}"
+read -r
