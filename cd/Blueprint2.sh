@@ -1,166 +1,229 @@
 #!/bin/bash
-set -e
 
-# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-# ┃         BLUEPRINT INSTALLER - NEXT-GEN EDITION v4                  ┃
-# ┃                Official Blueprint Framework • 2025                 ┃
-# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
-# ────────────────────────────────────────────────────────────────────────
-# Colors & Styling
-# ────────────────────────────────────────────────────────────────────────
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 MAGENTA='\033[0;35m'
-BOLD='\033[1m'
-NC='\033[0m'
+WHITE='\033[1;37m'
+NC='\033[0m' # No Color
 
-PANEL_DIR="/var/www/pterodactyl"
-
-# ────────────────────────────────────────────────────────────────────────
-# Utility Functions
-# ────────────────────────────────────────────────────────────────────────
-check_root() {
-    if [ "$EUID" -ne 0 ]; then
-        echo -e "${RED}✗ Please run as root (sudo -i)${NC}"
-        exit 1
-    fi
+# Function to print section headers
+print_header() {
+    echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN} $1 ${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
 }
 
-header() {
-    clear
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${CYAN}${BOLD} $1 ${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
-}
-
-run() {
+# Function to print status messages
+print_status() {
     echo -e "${YELLOW}⏳ $1...${NC}"
-    shift
-    if "$@"; then
-        echo -e "${GREEN}✓ Done${NC}"
+}
+
+print_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}❌ $1${NC}"
+}
+
+print_warning() {
+    echo -e "${MAGENTA}⚠️  $1${NC}"
+}
+
+# Function to check if command succeeded
+check_success() {
+    if [ $? -eq 0 ]; then
+        print_success "$1"
+        return 0
     else
-        echo -e "${RED}✗ Failed${NC}"
-        exit 1
+        print_error "$2"
+        return 1
     fi
 }
 
-pause() {
-    read -rp "Press ENTER to continue..."
+# Function to animate progress
+animate_progress() {
+    local pid=$1
+    local message=$2
+    local delay=0.1
+    local spinstr='|/-\'
+    
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "    \b\b\b\b"
 }
 
-# ────────────────────────────────────────────────────────────────────────
-# Welcome
-# ────────────────────────────────────────────────────────────────────────
-welcome() {
-clear
-cat << "EOF"
-   ___  _          _   _   ___   ___   ___   ___
-  / __|| |__   ___| |_| |_| __| / _ \ | _ )
- | (__ | '_ \ / _ \  _|  _|__ \/ (_) || _ \
-  \___||_.__/ \___/\__|\__|___/ \___/ |___/
-EOF
-echo -e "${CYAN}${BOLD}Blueprint Framework • Installer (Next-Gen)${NC}\n"
-sleep 1
+# Welcome animation
+welcome_animation() {
+    clear
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}"
+    echo "   ███╗   ██╗ ██████╗ ██████╗ ██╗████████╗ █████╗ "
+    echo "   ████╗  ██║██╔═══██╗██╔══██╗██║╚══██╔══╝██╔══██╗"
+    echo "   ██╔██╗ ██║██║   ██║██████╔╝██║   ██║   ███████║"
+    echo "   ██║╚██╗██║██║   ██║██╔══██╗██║   ██║   ██╔══██║"
+    echo "   ██║ ╚████║╚██████╔╝██║  ██║██║   ██║   ██║  ██║"
+    echo "   ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚═╝   ╚═╝   ╚═╝  ╚═╝"
+    echo -e "${NC}"
+    echo -e "${CYAN}              Blueprint Installer${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    sleep 2
 }
 
-# ────────────────────────────────────────────────────────────────────────
-# Fresh Install
-# ────────────────────────────────────────────────────────────────────────
-fresh_install() {
-    check_root
-    header "FRESH INSTALLATION • BLUEPRINT"
-
-    run "Updating system" apt update
-    run "Installing base packages" apt install -y curl git unzip zip ca-certificates gnupg
-
-    # Node.js 20.x
-    if ! command -v node >/dev/null; then
-        run "Adding NodeSource repository" bash -c "curl -fsSL https://deb.nodesource.com/setup_20.x | bash -"
-        run "Installing Node.js 20" apt install -y nodejs
+# Function: Install (Fresh Setup)
+install_nobita() {
+    print_header "FRESH INSTALLATION"
+    
+    if [ "$EUID" -ne 0 ]; then
+        print_error "Please run this script as root or with sudo"
+        return 1
     fi
 
-    run "Installing Yarn" npm install -g yarn
+    print_status "Starting Fresh Install for Nobita Hosting"
 
-    if [ ! -d "$PANEL_DIR" ]; then
-        echo -e "${RED}✗ Pterodactyl panel not found at:${NC} $PANEL_DIR"
-        exit 1
+    # --- Step 1: Install Node.js 20.x ---
+    print_header "INSTALLING NODE.JS 20.x"
+    print_status "Installing required packages"
+    sudo apt-get install -y ca-certificates curl gnupg > /dev/null 2>&1 &
+    animate_progress $! "Installing dependencies"
+    
+    print_status "Setting up Node.js repository"
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | \
+      sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg > /dev/null 2>&1
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | \
+      sudo tee /etc/apt/sources.list.d/nodesource.list > /dev/null 2>&1
+      
+    print_status "Updating package lists"
+    sudo apt-get update > /dev/null 2>&1 &
+    animate_progress $! "Updating package lists"
+    
+    print_status "Installing Node.js"
+    sudo apt-get install -y nodejs > /dev/null 2>&1 &
+    animate_progress $! "Installing Node.js"
+    check_success "Node.js installed" "Failed to install Node.js"
+
+    # --- Step 2: Install Yarn, Dependencies & Nobita Hosting Release ---
+    print_header "INSTALLING DEPENDENCIES"
+    print_status "Installing Yarn"
+    npm i -g yarn > /dev/null 2>&1 &
+    animate_progress $! "Installing Yarn"
+    check_success "Yarn installed" "Failed to install Yarn"
+
+    print_status "Changing to panel directory"
+    cd /var/www/pterodactyl || { print_error "Panel directory not found!"; return 1; }
+    
+    print_status "Installing Yarn dependencies"
+    yarn > /dev/null 2>&1 &
+    animate_progress $! "Installing Yarn dependencies"
+    check_success "Yarn dependencies installed" "Failed to install Yarn dependencies"
+
+    print_status "Installing additional packages"
+    sudo apt install -y zip unzip git curl wget > /dev/null 2>&1 &
+    animate_progress $! "Installing additional packages"
+    check_success "Additional packages installed" "Failed to install additional packages"
+
+    # --- Step 3: Download and Extract Release ---
+    print_header "DOWNLOADING NOBITA HOSTING"
+    print_status "Downloading latest release"
+    wget "$(curl -s https://api.github.com/repos/BlueprintFramework/framework/releases/latest | \
+    grep 'browser_download_url' | cut -d '"' -f 4)" -O release.zip > /dev/null 2>&1 &
+    animate_progress $! "Downloading release"
+    check_success "Release downloaded" "Failed to download release"
+
+    print_status "Extracting release files"
+    unzip -o release.zip > /dev/null 2>&1 &
+    animate_progress $! "Extracting files"
+    check_success "Files extracted" "Failed to extract files"
+
+    # --- Step 4: Run Nobita Hosting Installer ---
+    print_header "RUNNING BLUEPRINT INSTALLER"
+    if [ ! -f "blueprint.sh" ]; then
+        print_error "blueprint.sh not found in release package"
+        return 1
     fi
 
-    cd "$PANEL_DIR"
-
-    run "Installing panel dependencies" yarn install --production
-
-    header "Downloading Blueprint"
-
-    run "Downloading blueprint.sh" curl -fsSL \
-https://raw.githubusercontent.com/BlueprintFramework/framework/main/blueprint.sh \
--o blueprint.sh
-
+    print_status "Making blueprint.sh executable"
     chmod +x blueprint.sh
+    check_success "Made executable" "Failed to make executable"
 
-    header "Running Blueprint Installer"
-    bash blueprint.sh -install
-
-    ln -sf "$PANEL_DIR/blueprint.sh" /usr/local/bin/blueprint
-
-    echo -e "\n${GREEN}✓ Blueprint installed successfully!${NC}"
+    print_status "Running Blueprint installer"
+    bash blueprint.sh
 }
 
-# ────────────────────────────────────────────────────────────────────────
-# Reinstall
-# ────────────────────────────────────────────────────────────────────────
-reinstall() {
-    header "REINSTALL BLUEPRINT"
-    cd "$PANEL_DIR"
-    if command -v blueprint >/dev/null; then
-        blueprint -rerun-install
-    else
-        bash blueprint.sh -rerun-install
-    fi
+# Function: Reinstall (Rerun Only)
+reinstall_nobita() {
+    print_header "REINSTALLING NOBITA HOSTING"
+    print_status "Starting reinstallation"
+    blueprint -rerun-install > /dev/null 2>&1 &
+    animate_progress $! "Reinstalling"
+    check_success "Reinstallation completed" "Reinstallation failed"
 }
 
-# ────────────────────────────────────────────────────────────────────────
-# Update
-# ────────────────────────────────────────────────────────────────────────
-update() {
-    header "UPDATE BLUEPRINT"
-    cd "$PANEL_DIR"
-    if command -v blueprint >/dev/null; then
-        blueprint -upgrade
-    else
-        fresh_install
-    fi
+# Function: Update Nobita Hosting
+update_nobita() {
+    print_header "UPDATING NOBITA HOSTING"
+    print_status "Starting update"
+    blueprint -upgrade > /dev/null 2>&1 &
+    animate_progress $! "Updating"
+    check_success "Update completed" "Update failed"
 }
 
-# ────────────────────────────────────────────────────────────────────────
-# Menu
-# ────────────────────────────────────────────────────────────────────────
-menu() {
-    echo "1) Fresh Install"
-    echo "2) Reinstall"
-    echo "3) Update"
-    echo "0) Exit"
-    echo
-    read -rp "Select an option: " choice
+# Function to display the main menu
+show_menu() {
+    clear
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}           🔧 BLUEPRINT INSTALLER               ${NC}"
+    echo -e "${CYAN}              Nobita Hosting                   ${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e ""
+    echo -e "${WHITE}╔═══════════════════════════════════════════════╗${NC}"
+    echo -e "${WHITE}║                📋 MAIN MENU                   ║${NC}"
+    echo -e "${WHITE}╠═══════════════════════════════════════════════╣${NC}"
+    echo -e "${WHITE}║   ${GREEN}1)${NC} ${CYAN}Fresh Install${NC}                         ${WHITE}║${NC}"
+    echo -e "${WHITE}║   ${GREEN}2)${NC} ${CYAN}Reinstall (Rerun Only)${NC}                ${WHITE}║${NC}"
+    echo -e "${WHITE}║   ${GREEN}3)${NC} ${CYAN}Update Nobita Hosting${NC}                 ${WHITE}║${NC}"
+    echo -e "${WHITE}║   ${GREEN}0)${NC} ${RED}Exit${NC}                               ${WHITE}║${NC}"
+    echo -e "${WHITE}╚═══════════════════════════════════════════════╝${NC}"
+    echo -e ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${YELLOW}📝 Select an option [0-3]: ${NC}"
 }
 
-# ────────────────────────────────────────────────────────────────────────
-# Main
-# ────────────────────────────────────────────────────────────────────────
-welcome
+# Main execution
+welcome_animation
 
 while true; do
-    menu
-    case "$choice" in
-        1) fresh_install ;;
-        2) reinstall ;;
-        3) update ;;
-        0) echo "Bye 👋"; exit 0 ;;
-        *) echo -e "${MAGENTA}Invalid option${NC}" ;;
+    show_menu
+    read -r choice
+    
+    case $choice in
+        1) install_nobita ;;
+        2) reinstall_nobita ;;
+        3) update_nobita ;;
+        0) 
+            echo -e "${GREEN}Exiting Blueprint Installer...${NC}"
+            echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+            echo -e "${CYAN}           Thank you for using our tools!       ${NC}"
+            echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+            sleep 2
+            exit 0 
+            ;;
+        *) 
+            print_error "Invalid option! Please choose between 0-3"
+            sleep 2
+            ;;
     esac
-    pause
+    
+    echo -e ""
+    read -p "$(echo -e "${YELLOW}Press Enter to continue...${NC}")" -n 1
 done
