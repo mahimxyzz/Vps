@@ -1,6 +1,6 @@
 #!/bin/bash
 # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-# ┃         BLUEPRINT INSTALLER - NEXT-GEN EDITION v3                  ┃
+# ┃         BLUEPRINT INSTALLER - NEXT-GEN EDITION v4                  ┃
 # ┃                Official Blueprint Framework • 2025                 ┃
 # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
@@ -31,10 +31,6 @@ print_success() {
 
 print_error() {
     echo -e "${RED}✗ $1${NC}"
-}
-
-print_warning() {
-    echo -e "${MAGENTA}⚠ $1${NC}"
 }
 
 check_root() {
@@ -70,7 +66,7 @@ run_silent() {
 }
 
 # ────────────────────────────────────────────────────────────────────────
-# Welcome Animation (Next-Gen Style)
+# Welcome Animation
 # ────────────────────────────────────────────────────────────────────────
 welcome() {
     clear
@@ -88,15 +84,15 @@ EOF
 }
 
 # ────────────────────────────────────────────────────────────────────────
-# Fresh Install (Full Setup)
+# Fresh Install (Current Official Method)
 # ────────────────────────────────────────────────────────────────────────
 fresh_install() {
     print_header "FRESH INSTALLATION • BLUEPRINT FRAMEWORK"
     check_root
 
-    print_status "Preparing system for Blueprint installation"
-    
-    # Step 1: Node.js 20.x
+    print_status "Preparing system for Blueprint"
+
+    # Step 1: Node.js 20.x (required for Pterodactyl + Blueprint)
     print_header "Installing Node.js 20.x"
     run_silent apt-get install -y ca-certificates curl gnupg "Installing dependencies"
     mkdir -p /etc/apt/keyrings
@@ -105,26 +101,35 @@ fresh_install() {
     run_silent apt-get update "Updating package lists"
     run_silent apt-get install -y nodejs "Installing Node.js 20.x"
 
-    # Step 2: Yarn & Dependencies
-    print_header "Installing Core Dependencies"
+    # Step 2: Core dependencies
+    print_header "Installing Dependencies"
     run_silent npm install -g yarn "Installing Yarn globally"
-    cd /var/www/pterodactyl || { print_error "Pterodactyl panel directory not found (/var/www/pterodactyl)"; return 1; }
+    cd /var/www/pterodactyl || { print_error "Pterodactyl panel not found at /var/www/pterodactyl"; return 1; }
     run_silent yarn "Installing panel dependencies"
     run_silent apt install -y zip unzip git curl wget "Installing utilities"
 
-    # Step 3: Download & Extract Blueprint Release
+    # Step 3: Download & Extract Latest Blueprint Release
     print_header "Downloading Blueprint Framework"
     local release_url=$(curl -s https://api.github.com/repos/BlueprintFramework/framework/releases/latest | grep browser_download_url | cut -d '"' -f 4)
     if [ -z "$release_url" ]; then
-        print_error "Could not retrieve latest release URL"
+        print_error "Failed to fetch latest release URL"
         return 1
     fi
-    run_silent wget "$release_url" -O release.zip "Downloading latest release"
-    run_silent unzip -o release.zip "Extracting files"
-    rm release.zip  # Clean up
+    run_silent wget "$release_url" -O blueprint-release.zip "Downloading latest release"
+    run_silent unzip -o blueprint-release.zip "Extracting Blueprint files"
+    rm blueprint-release.zip
+
+    # Step 4: Run Official Blueprint Installer
+    print_header "Running Official Blueprint Installer"
+    if [ ! -f "install.sh" ]; then
+        print_error "install.sh not found in release. Manual installation may be required."
+        return 1
+    fi
+    chmod +x install.sh
+    bash install.sh
 
     print_success "Blueprint Framework installed successfully!"
-    print_status "You can now run 'blueprint' commands in the panel directory"
+    print_status "You can now use the 'blueprint' command in /var/www/pterodactyl"
 }
 
 # ────────────────────────────────────────────────────────────────────────
@@ -133,8 +138,12 @@ fresh_install() {
 reinstall() {
     print_header "REINSTALL BLUEPRINT (RERUN ONLY)"
     cd /var/www/pterodactyl || { print_error "Panel directory not found!"; return 1; }
-    run_silent blueprint -rerun-install "Re-running Blueprint installer"
-    print_success "Reinstallation completed!"
+    if command -v blueprint >/dev/null; then
+        run_silent blueprint -rerun-install "Re-running Blueprint installer"
+        print_success "Reinstallation completed!"
+    else
+        print_error "Blueprint command not found. Please run a fresh install first."
+    fi
 }
 
 # ────────────────────────────────────────────────────────────────────────
@@ -143,12 +152,16 @@ reinstall() {
 update() {
     print_header "UPDATE BLUEPRINT FRAMEWORK"
     cd /var/www/pterodactyl || { print_error "Panel directory not found!"; return 1; }
-    run_silent blueprint -upgrade "Applying latest updates"
-    print_success "Update completed successfully!"
+    if command -v blueprint >/dev/null; then
+        run_silent blueprint -upgrade "Applying latest updates"
+        print_success "Update completed successfully!"
+    else
+        print_error "Blueprint command not found. Please run a fresh install first."
+    fi
 }
 
 # ────────────────────────────────────────────────────────────────────────
-# Main Menu (Sleek & Modern)
+# Main Menu
 # ────────────────────────────────────────────────────────────────────────
 show_menu() {
     clear
@@ -180,7 +193,7 @@ while true; do
         0)
             clear
             echo -e "${GREEN}${BOLD}Thank you for using Blueprint Installer Next-Gen Edition!${NC}"
-            echo -e "${CYAN}Pterodactyl modding made powerful and simple${NC}"
+            echo -e "${CYAN}Official Blueprint Framework • Pterodactyl modding${NC}"
             echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
             sleep 2
             exit 0
