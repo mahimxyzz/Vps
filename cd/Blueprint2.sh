@@ -106,7 +106,7 @@ install_mahimxyzz() {
     animate_progress $! "Installing Node.js"
     check_success "Node.js installed" "Failed to install Node.js"
 
-    # --- Step 2: Install Yarn, Dependencies & mahimxyzz Hosting Release ---
+      # --- Step 2: Install Yarn, Dependencies & Nobita Hosting Release ---
     print_header "INSTALLING DEPENDENCIES"
     print_status "Installing Yarn"
     npm i -g yarn > /dev/null 2>&1 &
@@ -134,7 +134,12 @@ install_mahimxyzz() {
     animate_progress $! "Downloading release"
     check_success "Release downloaded" "Failed to download release"
 
-    # --- Step 4: Run mahimxyzz Hosting Installer ---
+    print_status "Extracting release files"
+    unzip -o release.zip > /dev/null 2>&1 &
+    animate_progress $! "Extracting files"
+    check_success "Files extracted" "Failed to extract files"
+
+    # --- Step 4: Run Installer ---
     print_header "RUNNING BLUEPRINT INSTALLER"
     if [ ! -f "blueprint.sh" ]; then
         print_error "blueprint.sh not found in release package"
