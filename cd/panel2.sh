@@ -54,7 +54,7 @@ if [[ -z "$DOMAIN" ]]; then
 fi
 echo -e "${GREEN}${BOLD}✓ Domain set to: ${WHITE}${DOMAIN}${RESET}\n"
 # Auto Generate Secure Credentials
-DB_PASS=$(openssl rand -base64 32 | tr -dc A-Za-z0-9 | head -c 24)
+DB_PASS="yourPassword"
 DB_NAME="panel"
 DB_USER="pterodactyl"
 PHP_VERSION="8.3"
