@@ -270,7 +270,7 @@ success "Queue worker activated!"
 
 # Final Epic Screen
 clear
-echo -e "${NEON_BLUE}"
+echo -e "${DANGER}"
 cat << "EOF"
  ___      ___       __       __    __   __     ___      ___ 
 |"  \    /"  |     /""\     /" |  | "\ |" \   |"  \    /"  |
